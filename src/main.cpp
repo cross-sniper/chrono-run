@@ -41,28 +41,32 @@ void postUpdate() {
     // Other game reset logic...
   }
 }
-
 void attack() {
-  // Check if the player pressed the attack key (Spacebar)
+    // Check if the player pressed the attack key (Spacebar)
 
-  // Calculate direction vector from player to mouse cursor
-  Vector2 direction = GetMousePosition();
-  direction.x -= player.pos.x + cam.offset.x - (float)GetScreenWidth() / 2;
-  direction.y -= player.pos.y + cam.offset.y - (float)GetScreenHeight() / 2;
+    // Get the position of the mouse cursor in world coordinates
+    Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), cam);
 
-  // Normalize direction vector
-  float length = sqrt(direction.x * direction.x + direction.y * direction.y);
-  direction.x /= length;
-  direction.y /= length;
+    // Calculate direction vector from player to mouse cursor
+    Vector2 direction = { mouseWorldPos.x - player.pos.x, mouseWorldPos.y - player.pos.y };
 
-  // Calculate bullet position
-  Vector2 bulletStartPosition = {player.pos.x + direction.x * player.size.x,
-                                 player.pos.y + direction.y * player.size.y};
+    // Normalize direction vector
+    float length = sqrt(direction.x * direction.x + direction.y * direction.y);
+    if (length > 0) {
+        direction.x /= length;
+        direction.y /= length;
+    }
 
-  // Create a bullet with the calculated position and direction
-  Bullet bullet(bulletStartPosition, direction, 5.0f, WHITE);
-  bullets.push_back(bullet);
+    // Calculate bullet position
+    Vector2 bulletStartPosition = {player.pos.x + direction.x * player.size.x,
+                                   player.pos.y + direction.y * player.size.y};
+
+    // Create a bullet with the calculated position and direction
+    Bullet bullet(bulletStartPosition, direction, 5.0f, WHITE);
+    bullets.push_back(bullet);
 }
+
+
 
 void checkCollisions() {
   if (player.iframe > 0)
@@ -81,20 +85,25 @@ void checkCollisions() {
 }
 
 void update() {
-  if (IsKeyDown(KEY_W)) {
-    player.pos.y -= 5;
-  }
-  if (IsKeyDown(KEY_S)) {
-    player.pos.y += 5;
-  }
-  if (IsKeyDown(KEY_A)) {
-    player.pos.x -= 5;
-  }
-  if (IsKeyDown(KEY_D)) {
-    player.pos.x += 5;
-  }
-  if (IsKeyPressed(KEY_SPACE))
-    attack();
+	float player_speed = 3.0f;
+    if (IsKeyDown(KEY_W)) {
+        player.pos.y -= player_speed;
+        if (player.pos.y < -2000) player.pos.y = -2000; // Constrain within bounds
+    }
+    if (IsKeyDown(KEY_S)) {
+        player.pos.y += player_speed;
+        if (player.pos.y > 2000) player.pos.y = 2000; // Constrain within bounds
+    }
+    if (IsKeyDown(KEY_A)) {
+        player.pos.x -= player_speed;
+        if (player.pos.x < -2000) player.pos.x = -2000; // Constrain within bounds
+    }
+    if (IsKeyDown(KEY_D)) {
+        player.pos.x += player_speed;
+        if (player.pos.x > 2000) player.pos.x = 2000; // Constrain within bounds
+    }
+    if (IsKeyPressed(KEY_SPACE)) attack();
+
 
   // Adjust the speed at which enemies move towards the player
   float enemySpeed = 3.5f; // You can adjust this value
@@ -142,19 +151,30 @@ void update() {
   checkCollisions();
   postUpdate();
 }
+
+// Function to calculate distance between two points
+float CalculateDistance(float x1, float y1, float x2, float y2) {
+    return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+}
+
 void Spawn() {
-  if (Entities.size() < 50) {
-    // Randomly spawn enemies within the visible screen area
-    Entity enemy = {
-        {(float)GetRandomValue(cam.target.x - cam.offset.x,
-                               cam.target.x + cam.offset.x),
-         (float)GetRandomValue(cam.target.y - cam.offset.y,
-                               cam.target.y + cam.offset.y)},
-        RED,
-        {20, 20} // Size of the enemy
-    };
-    Entities.push_back(enemy);
-  }
+    const int maxEnemies = 50;
+    const float minDistanceToPlayer = 300.0f; // Minimum distance between enemy and player
+
+    if (Entities.size() < maxEnemies) {
+        float x, y;
+        do {
+            x = (float)GetRandomValue(cam.target.x - cam.offset.x, cam.target.x + cam.offset.x);
+            y = (float)GetRandomValue(cam.target.y - cam.offset.y, cam.target.y + cam.offset.y);
+        } while (CalculateDistance(player.pos.x, player.pos.y, x, y) < minDistanceToPlayer); // Ensure minimum distance from player
+
+        Entity enemy = {
+            {x, y},
+            RED,
+            {20, 20} // Size of the enemy
+        };
+        Entities.push_back(enemy);
+    }
 }
 
 int main() {
@@ -174,7 +194,7 @@ int main() {
 
   spawnTimer.Interval([&]() { Spawn(); }, 2000);
 
-  player = {{0, 0}, WHITE, {30, 30}, 30, 3, 4};
+  player = {{0, 0}, WHITE, {30, 30}, 3 ,0, 30};
   while (not WindowShouldClose()) {
     cam.target = player.pos;
     cam.offset = {(float)GetScreenWidth() / 2,
@@ -188,8 +208,6 @@ int main() {
     DrawText(TextFormat("Max Score: %i", GameVars.maxScore), 0, 40, 20, WHITE);
     DrawText(TextFormat("Runs: %i", GameVars.tries), 0, 60, 20, WHITE);
     BeginMode2D(cam);
-    DrawCircle(GetMousePosition().x - cam.offset.x,
-               GetMousePosition().y - cam.offset.y, 20, {150, 150, 150, 255});
     update();
     if (player.iframe > 0)
       player.iframe--;
@@ -197,6 +215,8 @@ int main() {
       enemy.draw();
     }
     player.draw();
+    Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), cam);
+    DrawCircle(mouseWorldPos.x, mouseWorldPos.y, 10, {255,255,255,100});
     EndMode2D();
     drawWindows();
     EndDrawing();
