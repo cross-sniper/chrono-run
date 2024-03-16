@@ -1,5 +1,6 @@
 #include "defs.hpp"
-
+#ifndef BULLET
+#define BULLET
 class Bullet {
 private:
     Vector2 position;
@@ -7,11 +8,15 @@ private:
     float radius;
     Color color;
     int hp = 120;
-
 public:
+    int pierce = 0;
     // Constructor
-    Bullet(Vector2 startPos, Vector2 bulletSpeed, float bulletRadius, Color bulletColor)
-        : position(startPos), speed(bulletSpeed), radius(bulletRadius), color(bulletColor) {}
+    void init(Vector2 startPos, Vector2 bulletSpeed, float bulletRadius, Color bulletColor){
+        this->position = startPos;
+        this->speed = bulletSpeed;
+        this->radius = bulletRadius;
+        this->color = bulletColor;
+    }
     int getHp(){return hp;};
     // Update bullet position based on its speed
     void move() {
@@ -47,3 +52,6 @@ public:
         return CheckCollisionRecs(bulletRect, entityRect);
     }
 };
+
+Bullet DefaultBullet = {};
+#endif

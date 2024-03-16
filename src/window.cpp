@@ -11,6 +11,9 @@ void drawWindows(){
     #endif
     ImGui::Text("You can quit by pressing \"ESC\"");
     ImGui::Text("chrono-danger is still in development");
+    for(Upgrade up : Upgrades){
+        up.draw();
+    }
     ImGui::End();
 	rlImGuiEnd();
 }

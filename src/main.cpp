@@ -2,13 +2,16 @@
 #include "defs.hpp"
 #include "entity.cpp"
 #include "window.cpp"
+#include "upgrades.cpp"
 #include <algorithm>
+#include <imgui.h>
 #include <raylib.h>
 #include <vector>
+#include "bullet.cpp" // Include the Bullet class file
+#include "sprites.cpp"
 Camera2D cam;
 
 std::vector<Entity> Entities;
-#include "bullet.cpp" // Include the Bullet class file
 
 std::vector<Bullet> bullets; // Vector to store active bullets
 
@@ -36,11 +39,13 @@ void postUpdate() {
     if (GameVars.points > GameVars.maxScore)
       GameVars.maxScore = GameVars.points;
     GameVars.points = 0;
-    player.hp = 30; // Reset player health
+    player.hp = player.maxHp; // Reset player health
     GameVars.tries += 1;
     // Other game reset logic...
   }
 }
+
+// todo: modify this to allow future upgrades, like a shotgun upgrade
 void attack() {
     // Check if the player pressed the attack key (Spacebar)
 
@@ -58,12 +63,32 @@ void attack() {
     }
 
     // Calculate bullet position
-    Vector2 bulletStartPosition = {player.pos.x + direction.x * player.size.x,
-                                   player.pos.y + direction.y * player.size.y};
+    Vector2 bulletStartPosition = { player.pos.x + direction.x * player.size.x,
+                                    player.pos.y + direction.y * player.size.y };
 
-    // Create a bullet with the calculated position and direction
-    Bullet bullet(bulletStartPosition, direction, 5.0f, WHITE);
-    bullets.push_back(bullet);
+    // Spread the bullets if required
+    if (player.bullets > 1) {
+        float angleIncrement = 20.0f / (player.bullets - 1);
+        float currentAngle = -20.0f / 2.0f;
+        for (int i = 0; i < player.bullets; ++i) {
+            // Calculate direction for each bullet based on spread angle
+            Vector2 bulletDirection = { direction.x * cos(DEG2RAD * currentAngle) - direction.y * sin(DEG2RAD * currentAngle),
+                                        direction.x * sin(DEG2RAD * currentAngle) + direction.y * cos(DEG2RAD * currentAngle) };
+
+            // Create a bullet with the calculated position and direction
+            Bullet bullet=DefaultBullet;
+            bullet.init(bulletStartPosition, bulletDirection, 5.0f, WHITE);
+            bullets.push_back(bullet);
+
+            // Increment angle for the next bullet
+            currentAngle += angleIncrement;
+        }
+    } else {
+        // Create a single bullet if no spread
+        Bullet bullet = DefaultBullet;
+        bullet.init(bulletStartPosition, direction, 5.0f, WHITE);
+        bullets.push_back(bullet);
+    }
 }
 
 
@@ -102,11 +127,9 @@ void update() {
         player.pos.x += player_speed;
         if (player.pos.x > 2000) player.pos.x = 2000; // Constrain within bounds
     }
-    if (IsKeyPressed(KEY_SPACE)) attack();
-
 
   // Adjust the speed at which enemies move towards the player
-  float enemySpeed = 3.5f; // You can adjust this value
+  float enemySpeed = 2.5f; // You can adjust this value
 
   for (Entity &enemy : Entities) {
     // Calculate direction vector from enemy to player
@@ -142,7 +165,13 @@ void update() {
         }
       }
       if (collided) {
-        it = bullets.erase(it); // Remove bullet if it collided with an enemy
+        if(it->pierce >= 1){
+          it->pierce--;
+          ++it;
+        }
+        else{
+          it = bullets.erase(it); // Remove bullet if it collided with an enemy
+        }
       } else {
         ++it; // Move to the next bullet
       }
@@ -183,6 +212,9 @@ int main() {
   GameVars.points = 0;
   // fullscreen
   InitWindow(0, 0, "chrono-danger v1");
+  init();
+  initSprites();
+
   rlImGuiSetup(true);
   SetTargetFPS(60);
   // Initialize camera properties
@@ -191,8 +223,11 @@ int main() {
   cam.rotation = 0;             // Initial rotation
   cam.zoom = 1.0f;              // Initial zoom level
   Timer spawnTimer = Timer();
-
-  spawnTimer.Interval([&]() { Spawn(); }, 2000);
+  Timer shotTime = Timer();
+  shotTime.setTimeout(player.reloadTime * 1000);
+  spawnTimer.setTimeout(3000);// 3 seconds
+  spawnTimer.Interval([&]() { Spawn(); });
+  shotTime.Interval([&]() { attack(); });
 
   player = {{0, 0}, WHITE, {30, 30}, 3 ,0, 30};
   while (not WindowShouldClose()) {
@@ -200,14 +235,11 @@ int main() {
     cam.offset = {(float)GetScreenWidth() / 2,
                   (float)GetScreenHeight() /
                       2}; // Center the camera on the screen
-
+    shotTime.setTimeout(player.reloadTime * 1000);
     BeginDrawing();
     ClearBackground(BLACK);
-    DrawFPS(0, 0);
-    DrawText(TextFormat("Score: %i", GameVars.points), 0, 20, 20, WHITE);
-    DrawText(TextFormat("Max Score: %i", GameVars.maxScore), 0, 40, 20, WHITE);
-    DrawText(TextFormat("Runs: %i", GameVars.tries), 0, 60, 20, WHITE);
     BeginMode2D(cam);
+    DrawTexture(bg, -(int)(GetScreenWidth() / 2),-(int)(GetScreenHeight()/2),WHITE);
     update();
     if (player.iframe > 0)
       player.iframe--;
@@ -217,10 +249,16 @@ int main() {
     player.draw();
     Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), cam);
     DrawCircle(mouseWorldPos.x, mouseWorldPos.y, 10, {255,255,255,100});
+
     EndMode2D();
+    DrawFPS(0, 0);
+    DrawText(TextFormat("Score: %i", GameVars.points), 0, 20, 20, WHITE);
+    DrawText(TextFormat("Max Score: %i", GameVars.maxScore), 0, 40, 20, WHITE);
+    DrawText(TextFormat("Runs: %i", GameVars.tries), 0, 60, 20, WHITE);
     drawWindows();
     EndDrawing();
   }
+  unload();
   CloseWindow();
   return 0;
 }

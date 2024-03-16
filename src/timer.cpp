@@ -4,12 +4,14 @@
 class Timer {
 private:
     bool clear;
-
+    int timeout;
 public:
     Timer() : clear(false) {}
-
+    void setTimeout(int n){
+        timeout = n;
+    }
     template<typename Function>
-    void TimeOut(Function fn, int timeout) {
+    void TimeOut(Function fn) {
         clear = false;
         std::thread t([=]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
@@ -22,7 +24,7 @@ public:
     }
 
     template<typename Function>
-    void Interval(Function fn, int timeout) {
+    void Interval(Function fn) {
         clear = false;
         std::thread t([=]() {
             while(true){

@@ -10,13 +10,14 @@ typedef struct Entity{
 	Vector2 pos;       // entity position
 	Color color;       // entity color
 	Vector2 size;      // entity size
-	double reloadTime = 3;
-	double lastShot = 0;
+	double reloadTime = 30;
+	double bullets = 1;
 	double hp = 20;            // entity health
 	double resistance = 1.5f;    // entity armor
 	double damage = 10;        // entity damage
 	int iframe = 0;
 	int iframeMax = 240;// 240 frames without taking damage
+	double maxHp = 20;
 	void draw();
 }Entity;
 Entity player;
@@ -44,4 +45,10 @@ public:
 };
 _GameVars GameVars;// why not?
 
+typedef struct Upgrade {
+    const char* name;
+    void (*draw)();
+    // Add more properties as needed
+}Upgrade;
+std::vector<Upgrade> Upgrades;
 #endif
