@@ -213,6 +213,7 @@ int main() {
   GameVars.maxScore = 0;
   GameVars.tries = 0;
   GameVars.points = 0;
+  player.bullets = 1;
   // fullscreen
   InitWindow(0, 0, "chrono-danger v1");
   init();

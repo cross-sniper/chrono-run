@@ -8,7 +8,7 @@ void drawWindows() {
   ImGui::Text("Player Position: (%.1f, %.1f)", player.pos.x, player.pos.y);
   ImGui::Text("Player Health: %.1f", player.hp);
   ImGui::Text("Player Iframe: %d", player.iframe);
-  ImGui::Text("Player bullets: %d", player.bullets);
+  ImGui::Text("Player bullets: %f", player.bullets);
 #endif
   ImGui::Text("You can quit by pressing \"ESC\"");
   ImGui::Text("chrono-danger is still in development");

@@ -19,11 +19,10 @@ Upgrade attackSpeedUp = {"attack speed Upgrade - 30 points", []() {
                          }};
 
 Upgrade moreBullets = {"more bullets - 40 points", []() {
-                         if (GameVars.points >= 40 and
-                             player.bullets * 2 < 20) {
-                           if (ImGui::Button("2 times more bullets")) {
-                             player.bullets *= 2;
-                             GameVars.points -= 40;
+                         if (GameVars.points >= 50 and player.bullets + 1 < 5) {
+                           if (ImGui::Button("2 more bullets")) {
+                             player.bullets += 1;
+                             GameVars.points -= 50;
                            }
                          }
                        }};

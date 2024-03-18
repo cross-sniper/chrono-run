@@ -11,7 +11,7 @@ typedef struct Entity {
   Color color;  // entity color
   Vector2 size; // entity size
   double reloadTime = 30;
-  double bullets = 1;
+  float bullets = 1;
   double hp = 20;           // entity health
   double resistance = 1.5f; // entity armor
   double damage = 10;       // entity damage
